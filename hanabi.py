@@ -1,13 +1,23 @@
 import time
 import random
 import os
+import math
 from math import cos, sin
 
 fps = 5
 frame_duration = 1 / fps
 
+symbols = ['.', '+', '*', 'o']
+colors = {
+    'blue': ['\033[38;5;27m', '\033[38;5;33m', '\033[38;5;39m', '\033[38;5;21m'],
+    'green': ['\033[38;5;48m', '\033[38;5;46m', '\033[38;5;118m', '\033[38;5;50m'],
+    'yellow': ['\033[38;5;226m', '\033[38;5;220m', '\033[38;5;214m', '\033[38;5;190m'],
+    'red': ['\033[38;5;203m', '\033[38;5;208m', '\033[38;5;202m', '\033[38;5;196m'],
+}
+reset = '\033[0m'
+
 class Sky:
-    def __init__(self, height=20, width=40):
+    def __init__(self, height, width):
         self.height = height
         self.width = width
         self.canvas = [[' ' for _ in range(self.width)] for _ in range(self.height)]
@@ -21,11 +31,12 @@ class Sky:
             print(''.join(line))
 
 class Firework:
-    def __init__(self, sky, size=10):
+    def __init__(self, sky, size, color):
         self.sky = sky
         self.size = size
         self.center_x = sky.width // 2
         self.center_y = sky.height // 2
+        self.color = color
 
     def print_rising(self, current_height):
         self.sky.clear()
@@ -35,20 +46,21 @@ class Firework:
     def print_burst(self, current_frame, total_frames):
         self.sky.clear()
         is_fade = (current_frame == 0 or current_frame == total_frames - 1)
-        symbols = ['.', 'o', '+', '*'] if not is_fade else ['.']
         max_radius = self.size
         aspect_ratio = 2 # 真円に見えるように横方向にスケーリング
 
         current_radius = min(max_radius, int(max_radius * ((current_frame + 1) / 3)))
 
         for radius in range(1, current_radius + 1):
-            symbol = random.choice(symbols)
+            symbol = random.choice(symbols) if not is_fade else symbols[0]
+            s_idx = symbols.index(symbol)
+
             for angle_deg in range(0, 360, 15):
-                angle_rad = angle_deg * (3.14159 / 180)
+                angle_rad = math.radians(angle_deg)
                 x = int(self.center_x + aspect_ratio * radius * cos(angle_rad) + 0.5)
                 y = int(self.center_y + radius * sin(angle_rad) + 0.5)
                 if 0 <= x < self.sky.width and 0 <= y < self.sky.height:
-                    self.sky.canvas[y][x] = symbol
+                    self.sky.canvas[y][x] = '{}{}{}'.format(colors[self.color][s_idx], symbol, reset)
 
         self.sky.print_sky()
     
@@ -74,13 +86,16 @@ class Firework:
 
 def main():
     sky = Sky(height=30, width=60)
-    firework = Firework(sky=sky, size=8)
+    fw_green = Firework(sky=sky, size=8, color='green')
+    fw_blue = Firework(sky=sky, size=8, color='blue')
+    fw_red = Firework(sky=sky, size=8, color='red')
+    fw_yellow = Firework(sky=sky, size=8, color='yellow')
     try:
-        firework.wait(2)
-        firework.launch(rising_frames=9, wait_frames=5, burst_frames=9)
-        firework.wait(2)
-        firework.launch(rising_frames=8, wait_frames=4, burst_frames=8)
-        firework.wait(2)
+        fw_green.launch(rising_frames=9, wait_frames=5, burst_frames=12)
+        fw_blue.launch(rising_frames=8, wait_frames=4, burst_frames=11)
+        fw_red.launch(rising_frames=8, wait_frames=4, burst_frames=12)
+        fw_yellow.launch(rising_frames=8, wait_frames=4, burst_frames=11)
+
     except KeyboardInterrupt:
         sky.clear()
         print('花火大会は終了しました')
