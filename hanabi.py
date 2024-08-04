@@ -41,8 +41,6 @@ class Firework:
     def __init__(self, sky, symbols):
         self.sky = sky
         self.symbols = symbols
-        self.center_x = sky.width // 2
-        self.center_y = sky.height // 2
         self.x = 0
 
     def getSymbol(self):
@@ -86,6 +84,8 @@ class Firework:
         if self.size % len(self.symbols) == 0:
             self.size -= 1
         self.color = color if color is not None else random.choice(list(COLORS.keys()))
+        self.center_x = self.sky.width // 2 + random.randint(-10, 10)
+        self.center_y = self.sky.height // 2 + random.randint(-3, 3)
 
         step_heights = [int(self.sky.height - 1 - i * (self.sky.height // 2 / (rising_frames + 1))) for i in range(rising_frames)]
         for height in step_heights:
