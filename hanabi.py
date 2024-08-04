@@ -3,10 +3,13 @@ import random
 import os
 import math
 from math import cos, sin
+import string
 
 fps = 5
 frame_duration = 1 / fps
+random.seed(42)
 
+fade_symbol = '.'
 symbols = ['.', '+', '*', 'o']
 colors = {
     'blue': ['\033[38;5;27m', '\033[38;5;33m', '\033[38;5;39m', '\033[38;5;21m'],
@@ -31,12 +34,13 @@ class Sky:
             print(''.join(line))
 
 class Firework:
-    def __init__(self, sky, size, color):
+    def __init__(self, sky, size=None, color=None):
         self.sky = sky
-        self.size = size
+        self.size = size if size is not None else random.randint(8, 13)
+        self.color = color if color is not None else random.choice(list(colors.keys()))
         self.center_x = sky.width // 2
         self.center_y = sky.height // 2
-        self.color = color
+        self.symbols = random.sample(string.printable, 4)
 
     def print_rising(self, current_height):
         self.sky.clear()
@@ -44,6 +48,7 @@ class Firework:
         self.sky.print_sky()
 
     def print_burst(self, current_frame, total_frames):
+        self.symbols = random.sample(string.printable, 4)
         self.sky.clear()
         is_fade = (current_frame == 0 or current_frame == total_frames - 1)
         max_radius = self.size
@@ -52,8 +57,8 @@ class Firework:
         current_radius = min(max_radius, int(max_radius * ((current_frame + 1) / 3)))
 
         for radius in range(1, current_radius + 1):
-            symbol = random.choice(symbols) if not is_fade else symbols[0]
-            s_idx = symbols.index(symbol)
+            symbol = random.choice(self.symbols) if not is_fade else fade_symbol
+            s_idx = self.symbols.index(symbol) if not is_fade else 0
 
             for angle_deg in range(0, 360, 15):
                 angle_rad = math.radians(angle_deg)
@@ -70,6 +75,7 @@ class Firework:
         time.sleep(frame_duration * frames)
     
     def launch(self, rising_frames, wait_frames, burst_frames):
+        symbols = random.sample(string.printable, 4)
         step_heights = [int(self.sky.height - 1 - i * (self.sky.height // 2 / (rising_frames + 1))) for i in range(rising_frames)]
         for height in step_heights:
             self.sky.clear()
@@ -86,15 +92,16 @@ class Firework:
 
 def main():
     sky = Sky(height=30, width=60)
-    fw_green = Firework(sky=sky, size=8, color='green')
-    fw_blue = Firework(sky=sky, size=8, color='blue')
-    fw_red = Firework(sky=sky, size=8, color='red')
-    fw_yellow = Firework(sky=sky, size=8, color='yellow')
+    fw_green = Firework(sky)
+    fw_blue = Firework(sky)
+    fw_red = Firework(sky)
+    fw_yellow = Firework(sky)
     try:
-        fw_green.launch(rising_frames=9, wait_frames=5, burst_frames=12)
-        fw_blue.launch(rising_frames=8, wait_frames=4, burst_frames=11)
-        fw_red.launch(rising_frames=8, wait_frames=4, burst_frames=12)
-        fw_yellow.launch(rising_frames=8, wait_frames=4, burst_frames=11)
+        while True:
+            fw_green.launch(rising_frames=9, wait_frames=5, burst_frames=12)
+            fw_blue.launch(rising_frames=8, wait_frames=4, burst_frames=11)
+            fw_red.launch(rising_frames=8, wait_frames=4, burst_frames=12)
+            fw_yellow.launch(rising_frames=8, wait_frames=4, burst_frames=11)
 
     except KeyboardInterrupt:
         sky.clear()
