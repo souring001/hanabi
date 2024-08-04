@@ -7,8 +7,6 @@ random.seed(42)
 
 FPS = 5
 FRAME_DURATION = 1 / FPS
-MIN_SIZE = 8
-MAX_SIZE = 13
 FADE_SYMBOL = '.'
 RISING_SYMBOL = '|'
 COLORS = {
@@ -18,6 +16,12 @@ COLORS = {
     'red': ['\033[38;5;203m', '\033[38;5;208m', '\033[38;5;202m', '\033[38;5;196m'],
 }
 RESET = '\033[0m'
+MIN_SIZE = 5
+MAX_SIZE = 11
+current_min_size = MIN_SIZE # 後半になるにつれて大きくする
+
+FLAG = 'ASUSN{xxxxxxxxxxxxxxxxxxxxxxxxxxxxx}' # (≧▽≦)
+E = 65537
 
 class Sky:
     def __init__(self, height, width):
@@ -39,6 +43,12 @@ class Firework:
         self.symbols = symbols
         self.center_x = sky.width // 2
         self.center_y = sky.height // 2
+        self.x = 0
+
+    def getSymbol(self):
+        symbol = self.symbols[self.x * E % len(self.symbols)]
+        self.x += 1
+        return symbol
 
     def print_rising(self, current_height):
         self.sky.clear()
@@ -54,7 +64,7 @@ class Firework:
         current_radius = min(max_radius, int(max_radius * ((current_frame + 1) / 3)))
 
         for radius in range(1, current_radius + 1):
-            symbol = random.choice(self.symbols) if not is_fade else FADE_SYMBOL
+            symbol = self.getSymbol() if not is_fade else FADE_SYMBOL
             s_idx = self.symbols.index(symbol) % len(COLORS) if not is_fade else 0
 
             for angle_deg in range(0, 360, 15):
@@ -72,7 +82,9 @@ class Firework:
         time.sleep(FRAME_DURATION * frames)
     
     def launch(self, rising_frames, wait_frames, burst_frames, size=None, color=None):
-        self.size = size if size is not None else random.randint(MIN_SIZE, MAX_SIZE)
+        self.size = size if size is not None else random.randint(current_min_size, current_min_size + 2)
+        if self.size % len(self.symbols) == 0:
+            self.size -= 1
         self.color = color if color is not None else random.choice(list(COLORS.keys()))
 
         step_heights = [int(self.sky.height - 1 - i * (self.sky.height // 2 / (rising_frames + 1))) for i in range(rising_frames)]
@@ -90,19 +102,23 @@ class Firework:
             time.sleep(FRAME_DURATION)
 
 def main():
+    global current_min_size
     sky = Sky(height=30, width=60)
-    kiku = Firework(sky, '.+*o')
-    botan1 = Firework(sky, string.ascii_lowercase)
-    botan2 = Firework(sky, string.ascii_uppercase)
+    kiku = Firework(sky, '.o+*')
+    botan = Firework(sky, '+☆★◇◆')
     senrin = Firework(sky, string.hexdigits)
     yanagi = Firework(sky, string.printable)
+    kiku2 = Firework(sky, FLAG)
     try:
         while True:
-            kiku.launch(rising_frames=9, wait_frames=5, burst_frames=12)
-            botan1.launch(rising_frames=8, wait_frames=4, burst_frames=11)
-            botan2.launch(rising_frames=8, wait_frames=4, burst_frames=12)
+            botan.launch(rising_frames=8, wait_frames=4, burst_frames=11)
+            kiku.launch(rising_frames=8, wait_frames=4, burst_frames=12)
             senrin.launch(rising_frames=8, wait_frames=4, burst_frames=11)
             yanagi.launch(rising_frames=8, wait_frames=4, burst_frames=11)
+            kiku2.launch(rising_frames=9, wait_frames=5, burst_frames=12)
+            
+            current_min_size += 1
+            current_min_size = min(current_min_size, MAX_SIZE)
 
     except KeyboardInterrupt:
         sky.clear()
